@@ -18,4 +18,6 @@ int main() {
     printf("Chaine 2 copiée dans Chaine 1 : %s\n", strcpy(chaine1, chaine2));
 
     printf("Concatenation de chaine 1 et chaine 2 : %s\n", strcat(chaine1, chaine2));
+
+    return 0;
 }
