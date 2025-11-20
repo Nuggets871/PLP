@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 
 char version[] = "1.0.0";
 
@@ -21,15 +22,34 @@ void show_help(void)
     );
 }
 
+void show_aide(void)
+{
+    printf(
+        "aide : montre toutes les commandes disponibles\n"
+        "afficher : affiche du texte\n"
+        "version : affiche la version actuelle de l'interpréteur de commande\n"
+        "date : affiche la date actuelle\n"
+        "quitter : quitte l'interpréteur de commande\n"
+    );
+}
+
 void show_echo(char commande[1024])
 {
-    printf("Echo: ");
-    // Imprime la chaîne
-    for (int i = 5; commande[i] != '\0'; i++)
-        {
-            printf("%c", commande[i]);
+    int first_space = 1;
+    for (int i = 0; commande[i] != '\0'; i++) {
+        char c = commande[i];
+        if (i == 0) {
+            c = (char)toupper((unsigned char)c);
         }
-    printf("\n"); // Saut de ligne après la sortie  
+        if (c == ' ' && first_space) {
+            printf(": ");
+            first_space = 0;
+            continue;
+        }
+        printf("%c", c);
+    }
+
+    printf("\n");
 }
 
 void show_date(void)
@@ -99,12 +119,12 @@ int main()
         commande[strcspn(commande, "\n")] = 0;
 
         // Traite la commande en fonction de son contenu
-        if (strcmp(commande, "quit") == 0)
+        if (strcmp(commande, "quit") == 0 || strcmp(commande, "quitter") == 0)
         {
             // Quitte le programme si la commande est "quit"
             continuer = exe_quit();
         }
-        else if (strncmp(commande, "echo ", 5) == 0)
+        else if (strncmp(commande, "echo ", 5) == 0 ||strncmp(commande, "afficher ", 5) == 0)
         {
             // Traite la commande "echo" pour afficher du texte
             show_echo(commande); 
@@ -124,6 +144,11 @@ int main()
             //traite la commande version
             show_help();
         }   
+        else if(strcmp(commande, "aide") == 0)
+        {
+            //traite la commande version
+            show_aide();
+        }  
         else
         {
             // Affiche un message d'erreur si la commande est inconnue
