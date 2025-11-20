@@ -2,6 +2,79 @@
 #include <string.h>
 #include <time.h>
 
+char version[] = "1.0.0";
+
+
+void show_version(void)
+{
+    printf("Version de l'interpreteur de commande: %s\n", version);
+}
+
+void show_help(void)
+{
+    printf(
+        "help : montre toutes les commandes disponibles\n"
+        "echo : affiche du texte\n"
+        "version : affiche la version actuelle de l'interpréteur de commande\n"
+        "date : affiche la date actuelle\n"
+        "quit : quitte l'interpréteur de commande\n"
+    );
+}
+
+void show_echo(char commande[1024])
+{
+    printf("Echo: ");
+    // Imprime la chaîne
+    for (int i = 5; commande[i] != '\0'; i++)
+        {
+            printf("%c", commande[i]);
+        }
+    printf("\n"); // Saut de ligne après la sortie  
+}
+
+void show_date(void)
+{
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    printf("date: %d-%02d-%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+}
+
+int exe_quit(void)
+{
+    printf("Arrêt...\n");
+    return 0;
+}
+
+
+typedef int  (*cmd_int_noarg_t)(void);
+typedef void (*cmd_void_noarg_t)(void);
+typedef void (*cmd_void_str_t)(char *);
+
+typedef enum {
+    CMD_INT_NOARG,
+    CMD_VOID_NOARG,
+    CMD_VOID_STR
+} cmd_type_t;
+
+typedef struct {
+    const char *name;
+    cmd_type_t  type;
+    union {
+        cmd_int_noarg_t   int_noarg;
+        cmd_void_noarg_t  void_noarg;
+        cmd_void_str_t    void_str;
+    } func;
+} command_t;
+
+command_t commands[] = {
+    { "quit", CMD_INT_NOARG,  .func.int_noarg  = exe_quit  },
+    { "version", CMD_VOID_NOARG, .func.void_noarg = show_version },
+    { "date", CMD_VOID_NOARG, .func.void_noarg = show_date },
+    { "help", CMD_VOID_NOARG, .func.void_noarg = show_help },
+    { "echo", CMD_VOID_STR,   .func.void_str   = show_echo },
+};
+
+
 /**
  * Programme qui simule un interpréteur de commandes simple.
  * Il lit les commandes utilisateur et les traite en fonction de leur contenu.
@@ -29,28 +102,28 @@ int main()
         if (strcmp(commande, "quit") == 0)
         {
             // Quitte le programme si la commande est "quit"
-            printf("Arrêt...\n");
-            continuer = 0;
+            continuer = exe_quit();
         }
         else if (strncmp(commande, "echo ", 5) == 0)
         {
             // Traite la commande "echo" pour afficher du texte
-            printf("Echo: ");
-
-            // Imprime la chaîne
-            for (int i = 5; commande[i] != '\0'; i++)
-            {
-                printf("%c", commande[i]);
-            }
-            printf("\n"); // Saut de ligne après la sortie
+            show_echo(commande); 
         }
         else if(strcmp(commande, "date") == 0)
         {
             //traite la commande date
-            time_t t = time(NULL);
-            struct tm tm = *localtime(&t);
-            printf("date: %d-%02d-%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+            show_date();
         }
+        else if(strcmp(commande, "version") == 0)
+        {
+            //traite la commande version
+            show_version();
+        }   
+        else if(strcmp(commande, "help") == 0)
+        {
+            //traite la commande version
+            show_help();
+        }   
         else
         {
             // Affiche un message d'erreur si la commande est inconnue
@@ -62,3 +135,5 @@ int main()
 
     return 0;
 }
+
+
