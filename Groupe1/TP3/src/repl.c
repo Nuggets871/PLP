@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 /**
  * Programme qui simule un interpréteur de commandes simple.
@@ -43,10 +44,17 @@ int main()
             }
             printf("\n"); // Saut de ligne après la sortie
         }
+        else if(strcmp(commande, "date") == 0)
+        {
+            //traite la commande date
+            time_t t = time(NULL);
+            struct tm tm = *localtime(&t);
+            printf("date: %d-%02d-%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+        }
         else
         {
             // Affiche un message d'erreur si la commande est inconnue
-            printf("Commande non reconnue. Essayez 'echo <text>' pour afficher du texte, ou tapez 'quit' pour quitter.\n");
+            printf("Commande non reconnue. Essayez 'echo <text>' pour afficher du texte, 'date' pour afficher la date ou tapez 'quit' pour quitter.\n");
         }
 
         printf("\n"); // Saut de ligne après la sortie
