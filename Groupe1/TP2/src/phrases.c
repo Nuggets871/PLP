@@ -3,35 +3,36 @@
 
 int main() {
     char nom_fichier[100];
-    printf("Entrez le nom du fichier dans lequel chercher la phrase : ");
-    scanf("%99s", nom_fichier);
+    char phrase_recherche[200];
+    char ligne[500];
+    int nombre_occurrences = 0;
+    FILE *fichier;
+    char *position;
 
-    int ch;
-    while ((ch = getchar()) != '\n' && ch != EOF) { }
+    printf("Entrez le nom du fichier: ");
+    scanf("%s", nom_fichier);
 
-    char chaine[100];
-    printf("Entrez une chaîne de caractères à rechercher : ");
-    if (fgets(chaine, sizeof(chaine), stdin) == NULL) chaine[0] = '\0';
-    size_t len = strlen(chaine);
-    if (len > 0 && chaine[len - 1] == '\n') chaine[len - 1] = '\0';
+    getchar();
 
-    FILE * fichier = fopen(nom_fichier, "r");
+    printf("Entrez la phrase à rechercher: ");
+    fgets(phrase_recherche, 200, stdin);
 
-    char ligne[256];
-    int count = 0;
-    while (fgets(ligne, sizeof(ligne), fichier)) {
-        if (strstr(ligne, chaine) != NULL) {
-            printf("Phrase trouvée : %s", ligne);
-            count++;
+    phrase_recherche[strcspn(phrase_recherche, "\n")] = 0;
+
+    fichier = fopen(nom_fichier, "r");
+
+    while (fgets(ligne, 500, fichier) != NULL) {
+        position = ligne;
+        while ((position = strstr(position, phrase_recherche)) != NULL) {
+            nombre_occurrences++;
+            position++;
         }
     }
 
-    if (count == 0) {
-        printf("La phrase '%s' n'a pas été trouvée dans le fichier %s.\n", chaine, nom_fichier);
-    } else {
-        printf("La phrase a été trouvée %d fois\n", count);
-    }
-
     fclose(fichier);
+
+    printf("\nLa phrase \"%s\" apparait %d fois dans le fichier.\n", phrase_recherche, nombre_occurrences);
+
     return 0;
 }
+
