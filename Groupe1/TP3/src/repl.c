@@ -6,6 +6,91 @@
 char version[] = "1.0.0";
 
 
+int equals_ignore_case(const char *a, const char *b)
+{
+    while (*a && *b) {
+        if (tolower((unsigned char)*a) != tolower((unsigned char)*b)) {
+            return 0;
+        }
+        a++;
+        b++;
+    }
+    return (*a == '\0' && *b == '\0');
+}
+
+int starts_with_ignore_case(const char *str, const char *prefix)
+{
+    size_t i = 0;
+    while (prefix[i] != '\0') {
+        if (str[i] == '\0') return 0;
+        if (tolower((unsigned char)str[i]) != tolower((unsigned char)prefix[i])) {
+            return 0;
+        }
+        i++;
+    }
+    return 1;
+}
+
+int min3(int a, int b, int c)
+{
+    int m = (a < b) ? a : b;
+    return (m < c) ? m : c;
+}
+
+int levenshtein(const char *s1, const char *s2)
+{
+    size_t len1 = strlen(s1);
+    size_t len2 = strlen(s2);
+
+    int dp[len1 + 1][len2 + 1];
+
+    for (size_t i = 0; i <= len1; i++) dp[i][0] = (int)i;
+    for (size_t j = 0; j <= len2; j++) dp[0][j] = (int)j;
+
+    for (size_t i = 1; i <= len1; i++) {
+        for (size_t j = 1; j <= len2; j++) {
+            int cost = (tolower((unsigned char)s1[i - 1]) ==
+                        tolower((unsigned char)s2[j - 1])) ? 0 : 1;
+            dp[i][j] = min3(
+                dp[i - 1][j] + 1,        // suppression
+                dp[i][j - 1] + 1,        // insertion
+                dp[i - 1][j - 1] + cost  // substitution
+            );
+        }
+    }
+    return dp[len1][len2];
+}
+
+const char *known_commands[] = {
+    "help", "aide",
+    "echo", "afficher",
+    "version",
+    "date",
+    "quit", "quitter"
+};
+
+int known_count = sizeof(known_commands) / sizeof(known_commands[0]);
+
+const char *suggest_command(const char *input)
+{
+    int best_dist = 999;
+    const char *best_name = NULL;
+
+    for (int i = 0; i < known_count; i++) {
+        int d = levenshtein(input, known_commands[i]);
+        if (d < best_dist) {
+            best_dist = d;
+            best_name = known_commands[i];
+        }
+    }
+
+    if (best_dist <= 2) {
+        return best_name;
+    }
+    return NULL;
+}
+
+
 void show_version(void)
 {
     printf("Version de l'interpreteur de commande: %s\n", version);
@@ -100,62 +185,69 @@ command_t commands[] = {
  * Il lit les commandes utilisateur et les traite en fonction de leur contenu.
  */
 
-int main()
+int main(void)
 {
-    int continuer = 1; // Variable pour contrôler la boucle principale
+    int continuer = 1;
 
-    // Boucle principale qui lit et traite les commandes utilisateur
     while (continuer)
     {
-        printf("> "); // Affiche le prompt de commande
+        printf("> ");
 
-        // Buffer pour stocker la commande utilisateur
         char commande[1024];
 
-        // Lit la commande utilisateur et la stocke dans le buffer
-        fgets(commande, sizeof(commande), stdin);
+        if (fgets(commande, sizeof(commande), stdin) == NULL) {
+            break;
+        }
 
-        // Enlève le caractère de fin de ligne ajouté par fgets
         commande[strcspn(commande, "\n")] = 0;
 
-        // Traite la commande en fonction de son contenu
-        if (strcmp(commande, "quit") == 0 || strcmp(commande, "quitter") == 0)
+        if (equals_ignore_case(commande, "quit") ||
+            equals_ignore_case(commande, "quitter"))
         {
-            // Quitte le programme si la commande est "quit"
             continuer = exe_quit();
         }
-        else if (strncmp(commande, "echo ", 5) == 0 ||strncmp(commande, "afficher ", 5) == 0)
+        else if (starts_with_ignore_case(commande, "echo ") ||
+                 starts_with_ignore_case(commande, "afficher "))
         {
-            // Traite la commande "echo" pour afficher du texte
-            show_echo(commande); 
+            show_echo(commande);
         }
-        else if(strcmp(commande, "date") == 0)
+        else if (equals_ignore_case(commande, "date"))
         {
-            //traite la commande date
             show_date();
         }
-        else if(strcmp(commande, "version") == 0)
+        else if (equals_ignore_case(commande, "version"))
         {
-            //traite la commande version
             show_version();
-        }   
-        else if(strcmp(commande, "help") == 0)
+        }
+        else if (equals_ignore_case(commande, "help"))
         {
-            //traite la commande version
             show_help();
-        }   
-        else if(strcmp(commande, "aide") == 0)
+        }
+        else if (equals_ignore_case(commande, "aide"))
         {
-            //traite la commande version
             show_aide();
-        }  
+        }
         else
         {
-            // Affiche un message d'erreur si la commande est inconnue
-            printf("Commande non reconnue. Essayez 'echo <text>' pour afficher du texte, 'date' pour afficher la date ou tapez 'quit' pour quitter.\n");
+            const char *suggest = suggest_command(commande);
+
+            if (suggest != NULL) {
+                printf(
+                    "Commande non reconnue: \"%s\".\n"
+                    "Suggestion: avez-vous voulu taper \"%s\" ?\n",
+                    commande, suggest
+                );
+            } else {
+                printf(
+                    "Commande non reconnue: \"%s\".\n"
+                    "Commandes disponibles (FR/EN) : help/aide, echo/afficher, "
+                    "version, date, quit/quitter.\n",
+                    commande
+                );
+            }
         }
 
-        printf("\n"); // Saut de ligne après la sortie
+        printf("\n");
     }
 
     return 0;
