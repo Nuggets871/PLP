@@ -3,6 +3,7 @@
 #include <time.h>
 #include <ctype.h>
 #include "lexer.h"
+#include "parseur.h"
 
 char version[] = "1.0.0";
 
@@ -240,34 +241,44 @@ int main(void)
         }
         else
         {
-            // 1) Tentative : interpréter la ligne comme expression arithmétique
             Token tokens[8];
             int n = lexer_tokenize(commande, tokens, 8);
 
             if (n >= 0) {
-                printf("Expression detectee. Tokens :\n");
-                for (int i = 0; i < n; i++) {
-                    printf("  %d: type=%s", i, token_type_to_str(tokens[i].type));
-                    if (tokens[i].type == TOK_NUMBER) {
-                        printf(", value=%g", tokens[i].value);
-                    } else if (tokens[i].type == TOK_OPERATOR) {
-                        printf(", op=%c", tokens[i].op);
+                Expression expr;
+                if (parse_expression(tokens, &expr) == 0) {
+                    printf("Expression reconnue : %g %c %g\n",
+                           expr.left, expr.op, expr.right);
+                } else {
+                    const char *suggest = suggest_command(commande);
+
+                    if (suggest != NULL) {
+                        printf(
+                            "Commande non reconnue: \"%s\".\n"
+                            "Suggestion: avez-vous voulu taper \"%s\" ?\n",
+                            commande, suggest
+                        );
+                    } else {
+                        printf(
+                            "Commande non reconnue: \"%s\".\n"
+                            "Commandes disponibles (FR/EN) : help/aide, echo/afficher, "
+                            "version, date, quit/quitter.\n",
+                            commande
+                        );
                     }
-                    printf("\n");
                 }
             } else {
-                // 2) Ni commande connue, ni expression valide → suggestion
                 const char *suggest = suggest_command(commande);
 
                 if (suggest != NULL) {
                     printf(
-                        "Commande non reconnue: \"%s\".\n"
+                        "Commande ou expression invalide: \"%s\".\n"
                         "Suggestion: avez-vous voulu taper \"%s\" ?\n",
                         commande, suggest
                     );
                 } else {
                     printf(
-                        "Commande non reconnue: \"%s\".\n"
+                        "Commande ou expression invalide: \"%s\".\n"
                         "Commandes disponibles (FR/EN) : help/aide, echo/afficher, "
                         "version, date, quit/quitter.\n",
                         commande
