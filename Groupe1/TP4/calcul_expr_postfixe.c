@@ -32,7 +32,7 @@ void empiler(Pile *pile, char nouveauCaractere)
 
 char depiler(Pile *pile)
 {
-    if (pile == NULL)
+    if (pile == NULL || pile->premier == NULL)
     {
         exit(EXIT_FAILURE);
     }
@@ -40,29 +40,11 @@ char depiler(Pile *pile)
     char caractereDepile;
     Element *elementDepile = pile->premier;
 
-    if (pile != NULL && pile->premier)
-    {
-        caractereDepile = elementDepile->caractere;
-        pile->premier = elementDepile->suivant;
-        free(elementDepile);
-    }
+    caractereDepile = elementDepile->caractere;
+    pile->premier = elementDepile->suivant;
+    free(elementDepile);
+
     return caractereDepile;
-}
-
-void afficherPile(Pile *pile)
-{
-    if (pile == NULL)
-    {
-        exit(EXIT_FAILURE);
-    }
-    Element *actuel = pile->premier;
-
-    while (actuel != NULL)
-    {
-        printf("%c\n", actuel->caractere);
-        actuel = actuel->suivant;
-    }
-    printf("\n");
 }
 
 // fonction permettant d'avoir la priorité d'un opérateur
@@ -83,6 +65,52 @@ int getPriorite(char operateur)
     }
 }
 
+
+int evaluerPostfixe(char *expression)
+{
+    int pile[100];
+    int sommet = -1;
+
+    for (int i = 0; i < strlen(expression); i++)
+    {
+        if (expression[i] == ' ')
+        {
+            continue;
+        }
+
+        if (isdigit(expression[i]))
+        {
+            int valeur = expression[i] - '0';
+            sommet++;
+            pile[sommet] = valeur;
+        }
+        else
+        {
+            int b = pile[sommet];
+            sommet--;
+            int a = pile[sommet];
+            sommet--;
+
+            int resultat;
+
+            if (expression[i] == '+')
+                resultat = a + b;
+            else if (expression[i] == '-')
+                resultat = a - b;
+            else if (expression[i] == '*')
+                resultat = a * b;
+            else if (expression[i] == '/')
+                resultat = a / b;
+
+            sommet++;
+            pile[sommet] = resultat;
+        }
+    }
+
+    return pile[sommet];
+}
+
+
 int main()
 {
     Pile pile;
@@ -90,12 +118,13 @@ int main()
 
     char calculEntree[100];
     char calculSortie[100] = "";
-    printf("Entrez un calcul sans parenthèses : ");
+
+    printf("Entrez un calcul avec parenthèses : ");
     fgets(calculEntree, 100, stdin);
 
     for (int ii = 0; ii < strlen(calculEntree); ii++)
     {
-        if (calculEntree[ii] == ' ')
+        if (calculEntree[ii] == ' ' || calculEntree[ii] == '\n')
         {
             continue;
         }
@@ -105,12 +134,10 @@ int main()
         }
         else if (calculEntree[ii] == '(')
         {
-            // on  va empiler directement la parenthese ouvrante
             empiler(&pile, calculEntree[ii]);
         }
         else if (calculEntree[ii] == ')')
         {
-            // on depile jusqu'a rencontrer (
             while (pile.premier != NULL && pile.premier->caractere != '(')
             {
                 char operateur = depiler(&pile);
@@ -132,6 +159,7 @@ int main()
             empiler(&pile, calculEntree[ii]);
         }
     }
+
     while (pile.premier != NULL)
     {
         char operateur = depiler(&pile);
@@ -139,6 +167,10 @@ int main()
     }
 
     printf("Notation polonaise inversée : %s\n", calculSortie);
+
+    int resultat = evaluerPostfixe(calculSortie);
+
+    printf("Resultat du calcul : %d\n", resultat);
 
     return 0;
 }
