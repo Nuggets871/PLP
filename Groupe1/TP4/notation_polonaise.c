@@ -76,6 +76,8 @@ int getPriorite(char operateur)
     case '*':
     case '/':
         return 2;
+    case '(':
+        return 0;
     default:
         return 0;
     }
@@ -93,32 +95,41 @@ int main()
 
     for (int ii = 0; ii < strlen(calculEntree); ii++)
     {
-        if (calculEntree[ii] == ' ') {
+        if (calculEntree[ii] == ' ')
+        {
             continue;
         }
         else if (isdigit(calculEntree[ii]))
         {
             strncat(calculSortie, &calculEntree[ii], 1);
         }
+        else if (calculEntree[ii] == '(')
+        {
+            // on  va empiler directement la parenthese ouvrante
+            empiler(&pile, calculEntree[ii]);
+        }
+        else if (calculEntree[ii] == ')')
+        {
+            // on depile jusqu'a rencontrer (
+            while (pile.premier != NULL && pile.premier->caractere != '(')
+            {
+                char operateur = depiler(&pile);
+                strncat(calculSortie, &operateur, 1);
+            }
+            if (pile.premier != NULL && pile.premier->caractere == '(')
+            {
+                depiler(&pile);
+            }
+        }
         else
         {
-            if (pile.premier == NULL ||
-                getPriorite(calculEntree[ii]) > getPriorite(pile.premier->caractere))
+            while (pile.premier != NULL &&
+                   getPriorite(calculEntree[ii]) <= getPriorite(pile.premier->caractere))
             {
-                // on va empiler si la pile est vide ou que la priorité de l'operateur actuel est plus haute que l'operateur de la pile
-                empiler(&pile, calculEntree[ii]);
+                char operateur = depiler(&pile);
+                strncat(calculSortie, &operateur, 1);
             }
-            else
-            {
-                // sinon on va depiler et ajouter a la reponse
-                while (pile.premier != NULL &&
-                       getPriorite(calculEntree[ii]) <= getPriorite(pile.premier->caractere))
-                {
-                    char operateur = depiler(&pile);
-                    strncat(calculSortie, &operateur, 1);
-                }
-                empiler(&pile, calculEntree[ii]);
-            }
+            empiler(&pile, calculEntree[ii]);
         }
     }
     while (pile.premier != NULL)
