@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include "lexer.h"
 #include "parseur.h"
+#include "evaluation.h"
 
 char version[] = "1.0.0";
 
@@ -247,8 +248,10 @@ int main(void)
             if (n >= 0) {
                 Expression expr;
                 if (parse_expression(tokens, &expr) == 0) {
-                    printf("Expression reconnue : %g %c %g\n",
-                           expr.left, expr.op, expr.right);
+                    double res;
+                    if (eval_expression(&expr, &res) == 0) {
+                        printf("%g\n", res);
+                    }
                 } else {
                     const char *suggest = suggest_command(commande);
 
