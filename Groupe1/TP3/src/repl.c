@@ -2,9 +2,20 @@
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
+#include "lexer.h"
 
 char version[] = "1.0.0";
 
+const char *token_type_to_str(TokenType t)
+{
+    switch (t) {
+        case TOK_NUMBER:   return "NUMBER";
+        case TOK_OPERATOR: return "OPERATOR";
+        case TOK_END:      return "END";
+        case TOK_ERROR:    return "ERROR";
+        default:           return "UNKNOWN";
+    }
+}
 
 int equals_ignore_case(const char *a, const char *b)
 {
@@ -229,21 +240,39 @@ int main(void)
         }
         else
         {
-            const char *suggest = suggest_command(commande);
+            // 1) Tentative : interpréter la ligne comme expression arithmétique
+            Token tokens[8];
+            int n = lexer_tokenize(commande, tokens, 8);
 
-            if (suggest != NULL) {
-                printf(
-                    "Commande non reconnue: \"%s\".\n"
-                    "Suggestion: avez-vous voulu taper \"%s\" ?\n",
-                    commande, suggest
-                );
+            if (n >= 0) {
+                printf("Expression detectee. Tokens :\n");
+                for (int i = 0; i < n; i++) {
+                    printf("  %d: type=%s", i, token_type_to_str(tokens[i].type));
+                    if (tokens[i].type == TOK_NUMBER) {
+                        printf(", value=%g", tokens[i].value);
+                    } else if (tokens[i].type == TOK_OPERATOR) {
+                        printf(", op=%c", tokens[i].op);
+                    }
+                    printf("\n");
+                }
             } else {
-                printf(
-                    "Commande non reconnue: \"%s\".\n"
-                    "Commandes disponibles (FR/EN) : help/aide, echo/afficher, "
-                    "version, date, quit/quitter.\n",
-                    commande
-                );
+                // 2) Ni commande connue, ni expression valide → suggestion
+                const char *suggest = suggest_command(commande);
+
+                if (suggest != NULL) {
+                    printf(
+                        "Commande non reconnue: \"%s\".\n"
+                        "Suggestion: avez-vous voulu taper \"%s\" ?\n",
+                        commande, suggest
+                    );
+                } else {
+                    printf(
+                        "Commande non reconnue: \"%s\".\n"
+                        "Commandes disponibles (FR/EN) : help/aide, echo/afficher, "
+                        "version, date, quit/quitter.\n",
+                        commande
+                    );
+                }
             }
         }
 
