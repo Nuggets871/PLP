@@ -6,37 +6,47 @@
 #include "parseur.h"
 #include "evaluation.h"
 
-char version[] = "1.0.0";
-
-const char *token_type_to_str(TokenType t)
+// fonction pour comparer deux chaines sans tenir compte majuscule/minuscule
+int comparer_commande(const char *a, const char *b)
 {
-    switch (t) {
-        case TOK_NUMBER:   return "NUMBER";
-        case TOK_OPERATOR: return "OPERATOR";
-        case TOK_END:      return "END";
-        case TOK_ERROR:    return "ERROR";
-        default:           return "UNKNOWN";
-    }
-}
-
-int equals_ignore_case(const char *a, const char *b)
-{
-    while (*a && *b) {
-        if (tolower((unsigned char)*a) != tolower((unsigned char)*b)) {
+    int i = 0;
+    while (a[i] != '\0' && b[i] != '\0') {
+        char c1 = a[i];
+        char c2 = b[i];
+        if (c1 >= 'A' && c1 <= 'Z') {
+            c1 = c1 + 32;
+        }
+        if (c2 >= 'A' && c2 <= 'Z') {
+            c2 = c2 + 32;
+        }
+        if (c1 != c2) {
             return 0;
         }
-        a++;
-        b++;
+        i++;
     }
-    return (*a == '\0' && *b == '\0');
+    if (a[i] == '\0' && b[i] == '\0') {
+        return 1;
+    }
+    return 0;
 }
 
-int starts_with_ignore_case(const char *str, const char *prefix)
+// fonction pour verifier si une commande commence par un mot
+int commence_par(const char *commande, const char *mot)
 {
-    size_t i = 0;
-    while (prefix[i] != '\0') {
-        if (str[i] == '\0') return 0;
-        if (tolower((unsigned char)str[i]) != tolower((unsigned char)prefix[i])) {
+    int i = 0;
+    while (mot[i] != '\0') {
+        if (commande[i] == '\0') {
+            return 0;
+        }
+        char c1 = commande[i];
+        char c2 = mot[i];
+        if (c1 >= 'A' && c1 <= 'Z') {
+            c1 = c1 + 32;
+        }
+        if (c2 >= 'A' && c2 <= 'Z') {
+            c2 = c2 + 32;
+        }
+        if (c1 != c2) {
             return 0;
         }
         i++;
@@ -44,249 +54,125 @@ int starts_with_ignore_case(const char *str, const char *prefix)
     return 1;
 }
 
-int min3(int a, int b, int c)
+void afficher_version(void)
 {
-    int m = (a < b) ? a : b;
-    return (m < c) ? m : c;
+    printf("version 1.0.0\n");
 }
 
-int levenshtein(const char *s1, const char *s2)
+void afficher_help(void)
 {
-    size_t len1 = strlen(s1);
-    size_t len2 = strlen(s2);
-
-    int dp[len1 + 1][len2 + 1];
-
-    for (size_t i = 0; i <= len1; i++) dp[i][0] = (int)i;
-    for (size_t j = 0; j <= len2; j++) dp[0][j] = (int)j;
-
-    for (size_t i = 1; i <= len1; i++) {
-        for (size_t j = 1; j <= len2; j++) {
-            int cost = (tolower((unsigned char)s1[i - 1]) ==
-                        tolower((unsigned char)s2[j - 1])) ? 0 : 1;
-            dp[i][j] = min3(
-                dp[i - 1][j] + 1,        // suppression
-                dp[i][j - 1] + 1,        // insertion
-                dp[i - 1][j - 1] + cost  // substitution
-            );
-        }
-    }
-    return dp[len1][len2];
+    printf("help : affiche les commandes\n");
+    printf("echo : affiche du texte\n");
+    printf("version : affiche la version\n");
+    printf("date : affiche la date\n");
+    printf("quit : quitter\n");
 }
 
-const char *known_commands[] = {
-    "help", "aide",
-    "echo", "afficher",
-    "version",
-    "date",
-    "quit", "quitter"
-};
-
-int known_count = sizeof(known_commands) / sizeof(known_commands[0]);
-
-const char *suggest_command(const char *input)
+void afficher_aide(void)
 {
-    int best_dist = 999;
-    const char *best_name = NULL;
-
-    for (int i = 0; i < known_count; i++) {
-        int d = levenshtein(input, known_commands[i]);
-        if (d < best_dist) {
-            best_dist = d;
-            best_name = known_commands[i];
-        }
-    }
-
-    if (best_dist <= 2) {
-        return best_name;
-    }
-    return NULL;
+    printf("aide : affiche les commandes\n");
+    printf("afficher : affiche du texte\n");
+    printf("version : affiche la version\n");
+    printf("date : affiche la date\n");
+    printf("quitter : quitter\n");
 }
 
-
-void show_version(void)
+void afficher_echo(char commande[1024])
 {
-    printf("Version de l'interpreteur de commande: %s\n", version);
-}
-
-void show_help(void)
-{
-    printf(
-        "help : montre toutes les commandes disponibles\n"
-        "echo : affiche du texte\n"
-        "version : affiche la version actuelle de l'interpréteur de commande\n"
-        "date : affiche la date actuelle\n"
-        "quit : quitte l'interpréteur de commande\n"
-    );
-}
-
-void show_aide(void)
-{
-    printf(
-        "aide : montre toutes les commandes disponibles\n"
-        "afficher : affiche du texte\n"
-        "version : affiche la version actuelle de l'interpréteur de commande\n"
-        "date : affiche la date actuelle\n"
-        "quitter : quitte l'interpréteur de commande\n"
-    );
-}
-
-void show_echo(char commande[1024])
-{
-    int first_space = 1;
-    for (int i = 0; commande[i] != '\0'; i++) {
+    int premier_espace = 1;
+    int i = 0;
+    while (commande[i] != '\0') {
         char c = commande[i];
         if (i == 0) {
-            c = (char)toupper((unsigned char)c);
+            if (c >= 'a' && c <= 'z') {
+                c = c - 32;
+            }
         }
-        if (c == ' ' && first_space) {
+        if (c == ' ' && premier_espace == 1) {
             printf(": ");
-            first_space = 0;
+            premier_espace = 0;
+            i++;
             continue;
         }
         printf("%c", c);
+        i++;
     }
-
     printf("\n");
 }
 
-void show_date(void)
+void afficher_date(void)
 {
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
     printf("date: %d-%02d-%02d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
 }
 
-int exe_quit(void)
-{
-    printf("Arrêt...\n");
-    return 0;
-}
-
-
-typedef int  (*cmd_int_noarg_t)(void);
-typedef void (*cmd_void_noarg_t)(void);
-typedef void (*cmd_void_str_t)(char *);
-
-typedef enum {
-    CMD_INT_NOARG,
-    CMD_VOID_NOARG,
-    CMD_VOID_STR
-} cmd_type_t;
-
-typedef struct {
-    const char *name;
-    cmd_type_t  type;
-    union {
-        cmd_int_noarg_t   int_noarg;
-        cmd_void_noarg_t  void_noarg;
-        cmd_void_str_t    void_str;
-    } func;
-} command_t;
-
-command_t commands[] = {
-    { "quit", CMD_INT_NOARG,  .func.int_noarg  = exe_quit  },
-    { "version", CMD_VOID_NOARG, .func.void_noarg = show_version },
-    { "date", CMD_VOID_NOARG, .func.void_noarg = show_date },
-    { "help", CMD_VOID_NOARG, .func.void_noarg = show_help },
-    { "echo", CMD_VOID_STR,   .func.void_str   = show_echo },
-};
-
-
-/**
- * Programme qui simule un interpréteur de commandes simple.
- * Il lit les commandes utilisateur et les traite en fonction de leur contenu.
- */
-
 int main(void)
 {
     int continuer = 1;
 
-    while (continuer)
-    {
+    while (continuer == 1) {
         printf("> ");
 
         char commande[1024];
-
         if (fgets(commande, sizeof(commande), stdin) == NULL) {
             break;
         }
 
-        commande[strcspn(commande, "\n")] = 0;
+        // enlever le retour a la ligne
+        int i = 0;
+        while (commande[i] != '\0') {
+            if (commande[i] == '\n') {
+                commande[i] = '\0';
+                break;
+            }
+            i++;
+        }
 
-        if (equals_ignore_case(commande, "quit") ||
-            equals_ignore_case(commande, "quitter"))
-        {
-            continuer = exe_quit();
+        // verifier quit
+        if (comparer_commande(commande, "quit") == 1 || comparer_commande(commande, "quitter") == 1) {
+            printf("arret...\n");
+            continuer = 0;
         }
-        else if (starts_with_ignore_case(commande, "echo ") ||
-                 starts_with_ignore_case(commande, "afficher "))
-        {
-            show_echo(commande);
+        // verifier echo
+        else if (commence_par(commande, "echo ") == 1 || commence_par(commande, "afficher ") == 1) {
+            afficher_echo(commande);
         }
-        else if (equals_ignore_case(commande, "date"))
-        {
-            show_date();
+        // verifier date
+        else if (comparer_commande(commande, "date") == 1) {
+            afficher_date();
         }
-        else if (equals_ignore_case(commande, "version"))
-        {
-            show_version();
+        // verifier version
+        else if (comparer_commande(commande, "version") == 1) {
+            afficher_version();
         }
-        else if (equals_ignore_case(commande, "help"))
-        {
-            show_help();
+        // verifier help
+        else if (comparer_commande(commande, "help") == 1) {
+            afficher_help();
         }
-        else if (equals_ignore_case(commande, "aide"))
-        {
-            show_aide();
+        // verifier aide
+        else if (comparer_commande(commande, "aide") == 1) {
+            afficher_aide();
         }
-        else
-        {
+        // sinon essayer de calculer
+        else {
             Token tokens[8];
             int n = lexer_tokenize(commande, tokens, 8);
 
             if (n >= 0) {
                 Expression expr;
-                if (parse_expression(tokens, &expr) == 0) {
+                int parse_ok = parse_expression(tokens, &expr);
+                if (parse_ok == 0) {
                     double res;
-                    if (eval_expression(&expr, &res) == 0) {
+                    int eval_ok = eval_expression(&expr, &res);
+                    if (eval_ok == 0) {
                         printf("%g\n", res);
                     }
                 } else {
-                    const char *suggest = suggest_command(commande);
-
-                    if (suggest != NULL) {
-                        printf(
-                            "Commande non reconnue: \"%s\".\n"
-                            "Suggestion: avez-vous voulu taper \"%s\" ?\n",
-                            commande, suggest
-                        );
-                    } else {
-                        printf(
-                            "Commande non reconnue: \"%s\".\n"
-                            "Commandes disponibles (FR/EN) : help/aide, echo/afficher, "
-                            "version, date, quit/quitter.\n",
-                            commande
-                        );
-                    }
+                    printf("commande non reconnue: %s\n", commande);
                 }
             } else {
-                const char *suggest = suggest_command(commande);
-
-                if (suggest != NULL) {
-                    printf(
-                        "Commande ou expression invalide: \"%s\".\n"
-                        "Suggestion: avez-vous voulu taper \"%s\" ?\n",
-                        commande, suggest
-                    );
-                } else {
-                    printf(
-                        "Commande ou expression invalide: \"%s\".\n"
-                        "Commandes disponibles (FR/EN) : help/aide, echo/afficher, "
-                        "version, date, quit/quitter.\n",
-                        commande
-                    );
-                }
+                printf("commande non reconnue: %s\n", commande);
             }
         }
 

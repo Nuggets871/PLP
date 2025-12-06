@@ -1,32 +1,37 @@
-// evaluation.c
 #include "evaluation.h"
 #include <stdio.h>
 
 int eval_expression(const Expression *expr, double *result)
 {
-    switch (expr->op) {
-    case '+':
+    // addition
+    if (expr->op == '+') {
         *result = expr->left + expr->right;
         return 0;
+    }
 
-    case '-':
+    // soustraction
+    if (expr->op == '-') {
         *result = expr->left - expr->right;
         return 0;
+    }
 
-    case '*':
+    // multiplication
+    if (expr->op == '*') {
         *result = expr->left * expr->right;
         return 0;
+    }
 
-    case '/':
+    // division
+    if (expr->op == '/') {
         if (expr->right == 0.0) {
-            printf("Erreur: division par zéro.\n");
+            printf("erreur: division par zero\n");
             return -1;
         }
         *result = expr->left / expr->right;
         return 0;
-
-    default:
-        printf("Erreur: opérateur inconnu '%c'.\n", expr->op);
-        return -1;
     }
+
+    // operateur inconnu
+    printf("erreur: operateur inconnu\n");
+    return -1;
 }

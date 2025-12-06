@@ -1,4 +1,3 @@
-// lexer.c
 #include "lexer.h"
 #include <ctype.h>
 #include <stdlib.h>
@@ -9,13 +8,17 @@ int lexer_tokenize(const char *input, Token *tokens, int max_tokens)
     int count = 0;
 
     while (input[pos] != '\0' && count < max_tokens - 1) {
-        while (input[pos] == ' ' || input[pos] == '\t')
+        // sauter espaces
+        while (input[pos] == ' ' || input[pos] == '\t') {
             pos++;
+        }
 
-        if (input[pos] == '\0')
+        if (input[pos] == '\0') {
             break;
+        }
 
-        if (isdigit((unsigned char)input[pos]) || input[pos] == '.') {
+        // verifier si c'est un nombre
+        if (isdigit(input[pos]) || input[pos] == '.') {
             char *endptr;
             double val = strtod(&input[pos], &endptr);
             if (&input[pos] == endptr) {
@@ -25,16 +28,14 @@ int lexer_tokenize(const char *input, Token *tokens, int max_tokens)
             tokens[count].type = TOK_NUMBER;
             tokens[count].value = val;
             tokens[count].op = 0;
-
             count++;
-            pos = (int)(endptr - input);
+            pos = endptr - input;
         }
-        else if (input[pos] == '+' || input[pos] == '-' ||
-                 input[pos] == '*' || input[pos] == '/') {
+        // verifier si c'est un operateur
+        else if (input[pos] == '+' || input[pos] == '-' || input[pos] == '*' || input[pos] == '/') {
             tokens[count].type = TOK_OPERATOR;
             tokens[count].op = input[pos];
             tokens[count].value = 0.0;
-
             count++;
             pos++;
         }
@@ -44,6 +45,7 @@ int lexer_tokenize(const char *input, Token *tokens, int max_tokens)
         }
     }
 
+    // ajouter token fin
     if (count < max_tokens) {
         tokens[count].type = TOK_END;
         tokens[count].value = 0.0;
